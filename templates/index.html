@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Safar helps you discover tourist destinations across Maharashtra and India, plan road routes, and find nearby facilities.">
+    <title>Safar | Smart Tourism India</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+</head>
+<body>
+    <header class="navbar">
+        <a href="#home" class="logo">Safar<span>.</span></a>
+        <button class="menu-toggle" id="menuToggle" aria-label="Open navigation" aria-expanded="false">☰</button>
+        <nav id="mainNav">
+            <a href="#home">Home</a>
+            <a href="#destinations">Destinations</a>
+            <a href="#route-planner">Route Planner</a>
+            <a href="#facilities">Facilities</a>
+            <a href="#rapido">Rapido</a>
+        </nav>
+        <a href="#destinations" class="nav-cta">Explore India <span>→</span></a>
+    </header>
+
+    <main>
+        <section class="hero" id="home">
+            <div class="hero-copy">
+                <span class="eyebrow"><span class="eyebrow-dot"></span> YOUR INDIA, YOUR JOURNEY</span>
+                <h1>Find your next<br> <span>great escape.</span></h1>
+                <p>Discover iconic landmarks, peaceful hill stations, cultural treasures, and hidden corners of India. Plan a route and explore essentials in one place.</p>
+                <div class="hero-actions">
+                    <a class="button button-primary" href="#destinations">Explore destinations <span>↓</span></a>
+                    <a class="text-link" href="#route-planner">Plan a road trip ↗</a>
+                </div>
+                <div class="hero-note"><span>✦</span> One simple starting point for your next adventure.</div>
+            </div>
+            <div class="hero-art" aria-label="Illustration of mountains, sun and a travel route">
+                <div class="sun"></div><div class="mountain mountain-back"></div><div class="mountain mountain-front"></div>
+                <div class="hero-road"></div>
+                <div class="floating-pin pin-one">📍<small>New places</small></div>
+                <div class="floating-pin pin-two">✦<small>New memories</small></div>
+                <div class="hero-art-caption"><span>INDIA</span><strong>Take the scenic route.</strong></div>
+            </div>
+            <div class="hero-stats">
+                <div><strong>{{ place_count }}<small>+</small></strong><span>Destinations</span></div>
+                <div><strong>{{ maharashtra_count }}</strong><span>Places in Maharashtra</span></div>
+                <div><strong>All-India</strong><span>Discovery guide</span></div>
+            </div>
+        </section>
+
+        <section class="destination-section section-wrap" id="destinations">
+            <div class="section-heading">
+                <div><span class="section-kicker">THE PLACES YOU'LL REMEMBER</span><h2>Choose your <em>somewhere.</em></h2><p>Browse our guide to 50 hand-picked destinations across Maharashtra and the rest of India.</p></div>
+                <span class="count-pill">{{ place_count }} destinations <span>↗</span></span>
+            </div>
+            <div class="search-panel">
+                <label class="search-box"><span>⌕</span><input id="searchInput" type="search" placeholder="Search a place, city, state or experience…" autocomplete="off"><button id="clearSearch" type="button" aria-label="Clear search">×</button></label>
+                <label class="filter-field"><span>Region</span><select id="regionFilter"><option value="all">All India</option><option value="Maharashtra">Maharashtra</option><option value="Other India">Other India</option></select></label>
+                <label class="filter-field"><span>Experience</span><select id="categoryFilter"><option value="all">All experiences</option><option>Heritage</option><option>Nature</option><option>Spiritual</option><option>Beach &amp; Coast</option><option>City &amp; Culture</option></select></label>
+            </div>
+            <div class="results-line"><span id="resultsCount">Showing {{ place_count }} destinations</span><span>Choose a card to plan a route</span></div>
+            <div class="place-grid" id="placeGrid">
+                {% for place in places %}
+                <article class="place-card" data-id="{{ place.id }}" data-region="{{ place.region }}" data-category="{{ place.category }}" data-search="{{ (place.name ~ ' ' ~ place.city ~ ' ' ~ place.state ~ ' ' ~ place.category ~ ' ' ~ place.summary ~ ' ' ~ (place.highlights|join(' ')))|lower }}">
+                    <div class="place-art art-{{ loop.index0 % 6 }}" data-photo-frame="{{ place.id }}">
+                        <img class="place-photo" data-place-photo="{{ place.id }}" alt="Photograph of {{ place.name }}" loading="lazy" decoding="async">
+                        <div class="photo-placeholder"><span class="place-icon">{{ place.icon }}</span><small>Loading real photo…</small></div>
+                        <span class="place-number">{{ '%02d'|format(loop.index) }}</span>
+                        <span class="place-art-label">{{ place.category }}</span>
+                        <a class="photo-credit" data-photo-credit="{{ place.id }}" href="#" target="_blank" rel="noopener noreferrer" hidden>Photo source ↗</a>
+                    </div>
+                    <div class="place-body">
+                        <div class="place-meta"><span class="place-region {% if place.region == 'Maharashtra' %}maha-tag{% endif %}">{{ place.region }}</span><span class="place-location">⌖ {{ place.city }}, {{ place.state }}</span></div>
+                        <h3>{{ place.name }}</h3>
+                        <p class="place-summary">{{ place.summary }}</p>
+                        <div class="card-highlights">{% for highlight in place.highlights[:2] %}<span>{{ highlight }}</span>{% endfor %}</div>
+                        <div class="place-actions">
+                            <button class="card-details" type="button" data-place-id="{{ place.id }}">About place</button>
+                            <button class="card-route" type="button" data-place-id="{{ place.id }}">Plan route <span>↗</span></button>
+                            <a class="card-map" href="https://www.google.com/maps/search/?api=1&amp;query={{ (place.name ~ ', ' ~ place.city ~ ', ' ~ place.state)|urlencode }}" target="_blank" rel="noopener noreferrer" aria-label="Open {{ place.name }} in Google Maps">Map ↗</a>
+                        </div>
+                    </div>
+                </article>
+                {% endfor %}
+            </div>
+            <div id="emptyState" class="empty-state" hidden><span>🧭</span><h3>No places found</h3><p>Try another place, city, state, or filter.</p></div>
+        </section>
+
+        <section class="route-section" id="route-planner">
+            <div class="section-wrap route-layout">
+                <div class="route-copy">
+                    <span class="section-kicker">FROM HERE TO THERE</span>
+                    <h2>Your next journey,<br><em>mapped out.</em></h2>
+                    <p>Select one of the 50 destinations, allow location access, and get a road route, estimated distance, and estimated driving time.</p>
+                    <div class="route-form">
+                        <label for="destinationSelect">Choose destination</label>
+                        <select id="destinationSelect">
+                            {% for place in places %}<option value="{{ place.id }}" {% if place.id == 'gateway-of-india' %}selected{% endif %}>{{ place.name }} — {{ place.city }}, {{ place.state }}</option>{% endfor %}
+                        </select>
+                        <div class="route-buttons"><button type="button" class="button button-primary" id="routeButton">Show road route <span>→</span></button><button type="button" class="button button-light" id="locateButton">◎ Use my location</button></div>
+                        <p id="routeMessage" class="status-message" role="status">Choose a destination and select “Show road route” to begin.</p>
+                        <div class="route-stats" id="routeStats" hidden><div><span>Road distance</span><strong id="routeDistance">—</strong></div><div><span>Estimated drive</span><strong id="routeDuration">—</strong></div></div>
+                    </div>
+                    <p class="small-note">Route estimates are provided by a public OSRM demo service and are not live traffic predictions. An internet connection is required.</p>
+                </div>
+                <div class="map-panel"><div class="map-topline"><span><i></i> INDIA DESTINATION MAP</span><span id="mapCount">{{ place_count }} pins</span></div><div id="map" aria-label="Interactive map of tourism destinations"></div><div class="map-legend"><span><i class="legend-dot legend-destination"></i> Listed destinations</span><span><i class="legend-dot legend-user"></i> Your location</span><span><i class="legend-line"></i> Road route</span></div></div>
+            </div>
+        </section>
+
+        <section class="facility-section section-wrap" id="facilities">
+            <div class="section-heading"><div><span class="section-kicker">GOOD TO KNOW BEFORE YOU GO</span><h2>Useful stops, <em>nearby.</em></h2><p>Search for hotels, restaurants, hospitals and parking near your selected destination.</p></div></div>
+            <div class="facility-intro">Searching near <strong id="facilityDestination">Gateway of India, Mumbai, Maharashtra</strong><span>Search opens in Google Maps ↗</span></div>
+            <div class="facility-grid">
+                <article class="facility-card"><div class="facility-symbol">⌂</div><h3>Hotels</h3><p>Find places to stay close to your destination.</p><a id="hotelLink" href="https://www.google.com/maps/search/?api=1&amp;query=Hotels+near+Gateway+of+India" target="_blank" rel="noopener noreferrer">Find hotels <span>↗</span></a></article>
+                <article class="facility-card"><div class="facility-symbol">✳</div><h3>Restaurants</h3><p>Discover local food, cafes, and restaurants.</p><a id="restaurantLink" href="https://www.google.com/maps/search/?api=1&amp;query=Restaurants+near+Gateway+of+India" target="_blank" rel="noopener noreferrer">Find restaurants <span>↗</span></a></article>
+                <article class="facility-card"><div class="facility-symbol">＋</div><h3>Hospitals</h3><p>Look for hospitals and medical facilities nearby.</p><a id="hospitalLink" href="https://www.google.com/maps/search/?api=1&amp;query=Hospitals+near+Gateway+of+India" target="_blank" rel="noopener noreferrer">Find hospitals <span>↗</span></a></article>
+                <article class="facility-card"><div class="facility-symbol">P</div><h3>Parking</h3><p>Check for parking areas near your destination.</p><a id="parkingLink" href="https://www.google.com/maps/search/?api=1&amp;query=Parking+near+Gateway+of+India" target="_blank" rel="noopener noreferrer">Find parking <span>↗</span></a></article>
+            </div>
+            <p class="small-note">Google Maps provides the search results. Check opening hours, availability and suitability before visiting.</p>
+        </section>
+
+        <section class="rapido-section" id="rapido">
+            <div class="section-wrap rapido-layout"><div><span class="section-kicker">THE LAST MILE, SIMPLIFIED</span><h2>Ready to <em>hit the road?</em></h2><p>Check ride options for your journey using Rapido. Availability and services may vary by city.</p><div class="ride-types"><div><span>🏍️</span><strong>Bike</strong><small>Solo travel</small></div><div><span>🛺</span><strong>Auto</strong><small>City trips</small></div><div><span>🚕</span><strong>Cab</strong><small>Comfort ride</small></div></div></div><div class="rapido-cta"><span class="rapido-stamp">YOUR DESTINATION</span><strong id="rapidoDestination">Gateway of India, Mumbai, Maharashtra</strong><p>Continue to Rapido to enter your pickup and destination.</p><a href="https://www.rapido.bike/" target="_blank" rel="noopener noreferrer" class="button button-dark">Continue to Rapido <span>↗</span></a><small>This opens Rapido separately; Safar does not book rides or transfer trip details directly.</small></div></div>
+        </section>
+    </main>
+
+    <footer class="footer"><div class="footer-inner"><a href="#home" class="logo logo-footer">Safar<span>.</span></a><p>Explore places. Plan routes. Travel smarter.</p><span>© 2026 Safar Smart Tourism · Made for curious travellers</span></div></footer>
+
+    <!-- Destination detail dialog: encyclopedia summary, real photo and visit-planning notes -->
+    <dialog id="placeDialog" class="place-dialog" aria-labelledby="detailTitle">
+        <button type="button" class="dialog-close" id="closePlaceDialog" aria-label="Close destination details">×</button>
+        <div class="detail-layout">
+            <div class="detail-visual">
+                <img id="detailImage" alt="" hidden>
+                <div id="detailPhotoPlaceholder" class="detail-photo-placeholder"><span>📷</span><p>Loading destination photo…</p></div>
+                <a id="detailPhotoCredit" class="detail-photo-credit" href="#" target="_blank" rel="noopener noreferrer" hidden>Photo source and licence ↗</a>
+            </div>
+            <div class="detail-content">
+                <span class="detail-category" id="detailCategory">DESTINATION</span>
+                <h2 id="detailTitle">Place details</h2>
+                <p class="detail-location" id="detailLocation"></p>
+                <p class="detail-extract" id="detailExtract">Loading detailed information…</p>
+                <h3>What to explore</h3>
+                <ul id="detailHighlights" class="detail-highlights"></ul>
+                <div class="detail-facts">
+                    <div><span>Suggested time to visit</span><strong id="detailBestTime"></strong></div>
+                    <div><span>Time to allow</span><strong id="detailDuration"></strong></div>
+                </div>
+                <div class="visitor-tip"><strong>Visitor tip</strong><p id="detailVisitorTip"></p></div>
+                <div class="detail-actions">
+                    <a id="detailWikiLink" href="#" target="_blank" rel="noopener noreferrer">Read full article ↗</a>
+                    <a id="detailMapLink" href="#" target="_blank" rel="noopener noreferrer">Open in Maps ↗</a>
+                    <button type="button" id="detailRouteButton" class="button button-primary">Plan route →</button>
+                </div>
+                <p class="detail-source-note">Article summaries and photos are loaded from Wikipedia/Wikimedia when available. Open the photo source for the individual file's author and licence information. Seasonal and duration suggestions are planning guidance, not official opening hours.</p>
+            </div>
+        </div>
+    </dialog>
+
+    <script>const PLACES = {{ places|tojson }};</script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <script src="{{ url_for('static', filename='js/map.js') }}"></script>
+</body>
+</html>
